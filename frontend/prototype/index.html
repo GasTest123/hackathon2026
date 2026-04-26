@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>走神了一会儿 Control Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <div class="backdrop backdrop-a"></div>
+    <div class="backdrop backdrop-b"></div>
+    <div class="grain"></div>
+
+    <aside class="mode-rail" aria-label="互动模式选择">
+      <div class="rail-header">
+        <p class="eyebrow">Inside Your Mind</p>
+        <h1>走神了一会儿</h1>
+        <p class="rail-copy">由走神了一会儿陪你和情绪分身团队对话，在不同互动模式里把感受、记忆和想象认真接住，慢慢看清楚它们在说什么。</p>
+      </div>
+
+      <div class="mode-list" id="modeList">
+        <button class="mode-card active" data-mode="emotion_compass" type="button">
+          <span class="mode-icon">01</span>
+          <span class="mode-text">
+            <strong>每日情绪签到</strong>
+            <small>看看今天的心情落在哪一格</small>
+          </span>
+        </button>
+        <button class="mode-card" data-mode="future_theater" type="button">
+          <span class="mode-icon">02</span>
+          <span class="mode-text">
+            <strong>未来小剧场</strong>
+            <small>把担心和期待先排演一遍</small>
+          </span>
+        </button>
+        <button class="mode-card" data-mode="memory" type="button">
+          <span class="mode-icon">03</span>
+          <span class="mode-text">
+            <strong>记忆水晶球</strong>
+            <small>回看一段还在影响你的记忆</small>
+          </span>
+        </button>
+      </div>
+
+      <section class="status-card">
+        <p class="status-label">本轮模式</p>
+        <h2 id="activeModeName">每日情绪签到</h2>
+        <p id="activeModeSummary">先用一句话描述今天的心情，AI 会帮你拆开情绪背后的触发点。</p>
+      </section>
+    </aside>
+
+    <main class="chat-stage">
+      <header class="hero-panel">
+        <div class="hero-copy">
+          <p class="eyebrow" id="heroEyebrow">Mood Scan Online</p>
+          <h2 id="heroTitle">今天的你，像哪一种颜色在发光？</h2>
+        </div>
+        <div class="hero-stack" id="heroStack"></div>
+        <div class="hero-orb" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </header>
+
+      <section class="context-strip">
+        <article class="context-card">
+          <p class="context-label">AI 分身设定</p>
+          <h3 id="personaTitle">温柔观察员</h3>
+          <p id="personaCopy">不急着下结论，先陪你看见情绪正在发生什么，再一起给它一个出口。</p>
+        </article>
+        <article class="context-card">
+          <p class="context-label">互动方式</p>
+          <div class="starter-grid" id="suggestions"></div>
+        </article>
+      </section>
+
+      <section class="role-gallery" id="roleGallery" hidden aria-label="情绪角色介绍">
+        <div class="role-gallery-head">
+          <div>
+            <p class="context-label">角色介绍区</p>
+            <h3 class="role-gallery-title">今天由哪几位分身陪你上场</h3>
+          </div>
+          <p class="role-gallery-copy">先认识五位默认情绪角色。聊天模式下，你可以用点赞或点踩慢慢养成他们的等级与风格存在感。</p>
+        </div>
+        <div class="role-grid" id="roleGrid"></div>
+      </section>
+
+      <section class="compass-panel" id="compassPanel" hidden>
+        <div class="compass-calendar-card">
+          <div class="compass-calendar-head">
+            <div>
+              <p class="context-label">签到月历</p>
+              <h3 class="compass-calendar-title" id="calendarTitle">2026年4月</h3>
+            </div>
+            <button class="compass-sign-btn" id="compassSignBtn" type="button">一键签到</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>日</span>
+            <span>一</span>
+            <span>二</span>
+            <span>三</span>
+            <span>四</span>
+            <span>五</span>
+            <span>六</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+
+        <article class="compass-result-card" id="compassResult">
+          <p class="context-label">今日情绪占卜</p>
+          <div class="compass-result-empty">
+            <strong>今天还没有签到</strong>
+            <p>点击右上角 `一键签到`，系统会直接为你生成今天的情绪宜忌和一句角色箴言。</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="action-strip">
+        <button class="action-card" id="reflectionCard" type="button">
+          <span class="action-kicker">Reflect</span>
+          <strong id="reflectionTitle">拆开一点看</strong>
+          <small id="reflectionCopy">把现在最模糊的感受说得更具体一点。</small>
+        </button>
+        <button class="action-card" id="ritualCard" type="button">
+          <span class="action-kicker">Ritual</span>
+          <strong id="ritualTitle">给自己一个动作</strong>
+          <small id="ritualCopy">先做一个很小的动作，再继续聊。</small>
+        </button>
+        <button class="action-card" id="summaryCard" type="button">
+          <span class="action-kicker">Wrap Up</span>
+          <strong id="summaryTitle">收成一句话</strong>
+          <small id="summaryCopy">把这轮对话整理成一张今日卡片。</small>
+        </button>
+      </section>
+
+      <section class="demo-strip">
+        <article class="demo-card">
+          <p class="context-label">示例请求</p>
+          <pre class="demo-code" id="demoRequest"></pre>
+        </article>
+        <article class="demo-card">
+          <p class="context-label">示例输出</p>
+          <pre class="demo-code" id="demoResponse"></pre>
+        </article>
+      </section>
+
+      <section class="chat-panel">
+        <div class="message-list" id="messageList" aria-live="polite"></div>
+
+        <form class="composer" id="composer">
+          <label class="composer-label" for="messageInput">输入你现在想说的话</label>
+          <div class="composer-row">
+            <textarea id="messageInput" rows="1" placeholder="比如：我今天看起来没什么事，但心里一直有点堵。"></textarea>
+            <button class="send-btn" type="submit">发送</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <template id="messageTemplate">
+    <article class="message">
+      <div class="message-card">
+        <div class="message-meta">
+          <span class="message-role"></span>
+          <span class="message-time"></span>
+        </div>
+        <div class="message-bubble"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>
