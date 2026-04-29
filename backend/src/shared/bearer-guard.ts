@@ -1,25 +1,26 @@
 import { ApiError } from './http-error';
+import { isUsableJwtAccessToken } from './jwt';
 
 /**
- * Returns a `beforeHandle` function that enforces `Authorization: Bearer <key>`
- * on routes it is attached to. When `expectedKey` is undefined the guard is a
- * no-op, which lets the caller register it unconditionally.
+ * Returns a `beforeHandle` function for LLM routes. When SERVER_API_KEY is set,
+ * callers may pass either that static key or a JWT access token signed with
+ * JWT_SECRET via `Authorization: Bearer <token>`.
  */
-export function requireBearerKey(expectedKey: string | undefined) {
+export function requireLlmBearerAuth(expectedKey: string | undefined, jwtSecret: string) {
   return ({ request }: { request: Request }) => {
-    if (!expectedKey) {
-      return;
-    }
-
     const header = request.headers.get('authorization') ?? '';
     const match = header.match(/^Bearer\s+(.+)$/i);
     const provided = match?.[1]?.trim();
 
-    if (!provided || provided !== expectedKey) {
+    if (
+      !provided ||
+      ((!expectedKey || provided !== expectedKey) && !isUsableJwtAccessToken(provided, jwtSecret))
+    ) {
       throw new ApiError({
         status: 401,
         type: 'unauthorized',
-        message: 'Missing or invalid API key. Pass "Authorization: Bearer <SERVER_API_KEY>".',
+        message:
+          'Missing or invalid credentials. Pass "Authorization: Bearer <SERVER_API_KEY>" or a valid access token.',
       });
     }
   };

@@ -1,13 +1,20 @@
 import { Elysia } from 'elysia';
 
-import { requireBearerKey } from '../../shared/bearer-guard';
+import { requireLlmBearerAuth } from '../../shared/bearer-guard';
+import { accessTokenSecurity, ErrorResponseSchema } from '../../shared/schema';
+import {
+  ChatCompletionRequestSchema,
+  ChatCompletionResponseSchema,
+  ModelsListResponseSchema,
+} from './schema';
 import { createLlmService } from './service';
 import type { LlmProvider } from './types';
 
 export interface LlmRoutesOptions {
   provider: LlmProvider;
-  /** When set, callers must send `Authorization: Bearer <serverApiKey>`. */
+  /** When set, callers must send SERVER_API_KEY or a JWT access token. */
   serverApiKey?: string;
+  jwtSecret: string;
 }
 
 /**
@@ -15,8 +22,8 @@ export interface LlmRoutesOptions {
  *   POST /v1/chat/completions
  *   GET  /v1/models
  */
-export function llmRoutes({ provider, serverApiKey }: LlmRoutesOptions) {
-  const guard = requireBearerKey(serverApiKey);
+export function llmRoutes({ provider, serverApiKey, jwtSecret }: LlmRoutesOptions) {
+  const guard = requireLlmBearerAuth(serverApiKey, jwtSecret);
   const service = createLlmService(provider);
 
   return new Elysia({ name: 'llm' })
@@ -29,7 +36,24 @@ export function llmRoutes({ provider, serverApiKey }: LlmRoutesOptions) {
             set.status = 200;
             return completion;
           },
-          { beforeHandle: guard },
+          {
+            beforeHandle: guard,
+            body: ChatCompletionRequestSchema,
+            response: {
+              200: ChatCompletionResponseSchema,
+              400: ErrorResponseSchema,
+              401: ErrorResponseSchema,
+              429: ErrorResponseSchema,
+              500: ErrorResponseSchema,
+              502: ErrorResponseSchema,
+            },
+            detail: {
+              tags: ['LLM'],
+              summary: 'Create chat completion',
+              description: 'OpenAI-compatible non-streaming chat completion endpoint.',
+              security: accessTokenSecurity,
+            },
+          },
         )
         .get(
           '/models',
@@ -37,7 +61,19 @@ export function llmRoutes({ provider, serverApiKey }: LlmRoutesOptions) {
             set.status = 200;
             return service.listModels();
           },
-          { beforeHandle: guard },
+          {
+            beforeHandle: guard,
+            response: {
+              200: ModelsListResponseSchema,
+              401: ErrorResponseSchema,
+              500: ErrorResponseSchema,
+            },
+            detail: {
+              tags: ['LLM'],
+              summary: 'List available models',
+              security: accessTokenSecurity,
+            },
+          },
         ),
     );
 }

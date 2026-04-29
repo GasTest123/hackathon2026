@@ -1,7 +1,72 @@
+import { t } from 'elysia';
+
 import { ApiError, isRecord } from '../../shared/http-error';
 import type { ChatCompletionRequest, ChatMessage, Role } from './types';
 
-const VALID_ROLES: readonly Role[] = ['system', 'user', 'assistant'];
+const VALID_ROLES = ['system', 'user', 'assistant'] as const satisfies readonly Role[];
+
+export const RoleSchema = t.UnionEnum(VALID_ROLES);
+
+export const ChatMessageSchema = t.Object({
+  role: RoleSchema,
+  content: t.String({ minLength: 1 }),
+});
+
+export const ChatCompletionRequestSchema = t.Object(
+  {
+    model: t.Optional(t.String({ minLength: 1 })),
+    messages: t.Array(ChatMessageSchema, { minItems: 1 }),
+    max_tokens: t.Optional(t.Integer({ minimum: 1 })),
+    temperature: t.Optional(t.Number({ minimum: 0, maximum: 2 })),
+    top_p: t.Optional(t.Number({ minimum: 0, maximum: 1 })),
+    stream: t.Optional(
+      t.Boolean({
+        description:
+          'Streaming is not supported yet. Omit this field or pass false.',
+      }),
+    ),
+  },
+  { description: 'OpenAI-compatible non-streaming chat completion request.' },
+);
+
+export const ChatCompletionResponseSchema = t.Object(
+  {
+    id: t.String(),
+    object: t.Literal('chat.completion'),
+    created: t.Optional(t.Integer({ minimum: 0 })),
+    model: t.Optional(t.String()),
+    choices: t.Array(
+      t.Object({
+        index: t.Integer({ minimum: 0 }),
+        message: t.Object({
+          role: t.String(),
+          content: t.Nullable(t.String()),
+        }),
+        finish_reason: t.Optional(t.Nullable(t.String())),
+      }),
+    ),
+    usage: t.Optional(
+      t.Object({
+        prompt_tokens: t.Integer({ minimum: 0 }),
+        completion_tokens: t.Integer({ minimum: 0 }),
+        total_tokens: t.Integer({ minimum: 0 }),
+      }),
+    ),
+  },
+  { description: 'OpenAI-compatible non-streaming chat completion response.' },
+);
+
+export const ModelSchema = t.Object({
+  id: t.String(),
+  object: t.Literal('model'),
+  created: t.Integer({ minimum: 0 }),
+  owned_by: t.String(),
+});
+
+export const ModelsListResponseSchema = t.Object({
+  object: t.Literal('list'),
+  data: t.Array(ModelSchema),
+});
 
 /**
  * Parse and validate an OpenAI-compatible chat completion request body.

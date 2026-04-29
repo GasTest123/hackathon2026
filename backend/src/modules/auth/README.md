@@ -4,16 +4,18 @@ User-facing authentication (sessions, JWT, OAuth logins, etc.).
 
 > Not to be confused with the `SERVER_API_KEY` bearer gate in
 > `src/shared/bearer-guard.ts`, which protects our OpenAI-compatible API
-> surface with a static bearer token. That guard is transport-level; this
-> module is about end-users.
+> surface with a static bearer token or JWT access token. This module is
+> about end-user sessions.
 
 ## Files
 
 - `routes.ts` — `authRoutes({ db })` returns an Elysia plugin mounted under
-  `/auth`. Currently `GET /auth/ping` is live and `POST /auth/login` calls the
-  service (which throws `not_implemented` until the real flow lands).
+  `/auth`. Currently `GET /auth/session` returns the current login state and
+  `POST /auth/login` returns an access token for the submitted `email` and
+  `deviceId`. `/auth/session` also accepts `SERVER_API_KEY` and returns a fixed
+  service identity with a generated access token.
 - `service.ts` — `createAuthService({ db })` builds the business layer (JWT
-  issuance, password hashing, session lookup). Placeholder for now.
+  issuance, session lookup). Placeholder for now.
 - `schema.ts` — request validators returning typed DTOs, e.g.
   `parseLoginRequest(body)`.
 - `index.ts` — barrel export.
@@ -22,7 +24,7 @@ User-facing authentication (sessions, JWT, OAuth logins, etc.).
 
 - `POST /auth/login`
 - `POST /auth/logout`
-- `GET  /auth/me`
+- `GET  /auth/session`
 - `POST /auth/refresh`
 
 ## Guidelines

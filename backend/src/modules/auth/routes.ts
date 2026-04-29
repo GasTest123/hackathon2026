@@ -1,29 +1,67 @@
 import { Elysia } from 'elysia';
 
 import type { DbClient } from '../../db';
-import { parseLoginRequest } from './schema';
+import { accessTokenSecurity, ErrorResponseSchema } from '../../shared/schema';
+import {
+  AuthSessionResponseSchema,
+  LoginRequestSchema,
+  LoginResponseSchema,
+  parseLoginRequest,
+} from './schema';
 import { createAuthService } from './service';
 
 export interface AuthRoutesOptions {
   db: DbClient;
+  serverApiKey?: string;
+  jwtSecret: string;
 }
 
 /**
  * Elysia plugin for user-facing auth (login, session, OAuth logins, etc.).
  * Exposes:
- *   GET  /auth/ping   — smoke check, returns `{ ok: true, module: 'auth' }`
- *   POST /auth/login  — delegates to {@link createAuthService}; currently
- *                       throws `not_implemented` until the service is wired.
+ *   GET  /auth/session — returns the current login state for the caller.
+ *   POST /auth/login   — returns an access token for the submitted email/device.
  */
-export function authRoutes({ db }: AuthRoutesOptions) {
-  const service = createAuthService({ db });
+export function authRoutes({ db, serverApiKey, jwtSecret }: AuthRoutesOptions) {
+  const service = createAuthService({ db, serverApiKey, jwtSecret });
 
   return new Elysia({ name: 'auth' }).group('/auth', (group) =>
     group
-      .get('/ping', () => ({ ok: true, module: 'auth' }))
-      .post('/login', async ({ body }) => {
-        const input = parseLoginRequest(body);
-        return service.login(input);
-      }),
+      .get('/session', ({ request }) => service.session(readBearerToken(request)), {
+        response: {
+          200: AuthSessionResponseSchema,
+          401: ErrorResponseSchema,
+        },
+        detail: {
+          tags: ['Auth'],
+          summary: 'Get current session',
+          security: accessTokenSecurity,
+        },
+      })
+      .post(
+        '/login',
+        async ({ body }) => {
+          const input = parseLoginRequest(body);
+          return service.login(input);
+        },
+        {
+          body: LoginRequestSchema,
+          response: {
+            200: LoginResponseSchema,
+            400: ErrorResponseSchema,
+            500: ErrorResponseSchema,
+          },
+          detail: {
+            tags: ['Auth'],
+            summary: 'Login with credentials',
+          },
+        },
+      ),
   );
+}
+
+function readBearerToken(request: Request) {
+  const header = request.headers.get('authorization') ?? '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || undefined;
 }

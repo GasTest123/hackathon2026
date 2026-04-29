@@ -17,7 +17,7 @@ bun run dev
 ```
 
 Open http://localhost:3000/ and you should see the active provider in the
-JSON response. Health probe lives at `/health`.
+JSON response. Health probe lives at `/healthcheck`.
 
 ## Configuration
 
@@ -29,7 +29,8 @@ for the full list. Key entries:
 | `LLM_PROVIDER` | `garena` | `garena` or `openai`. |
 | `PORT` | `3000` | HTTP listen port. |
 | `PREFIX` | `` | HTTP url prefix. |
-| `SERVER_API_KEY` | unset | Optional. When set, clients must send `Authorization: Bearer <SERVER_API_KEY>`. |
+| `SERVER_API_KEY` | unset | Optional. When set, LLM clients may send `Authorization: Bearer <SERVER_API_KEY>` or a JWT access token. |
+| `JWT_SECRET` | unset | Secret used to sign and verify user access-token JWTs. May be empty for local development; use a strong secret in production. |
 | `GARENA_API_ORIGIN` | — | Required when `GARENA_BASE_URL` is a relative path. |
 | `GARENA_BASE_URL` | `/api/v1` | Use a full URL (`https://…/api/v1`) to skip `GARENA_API_ORIGIN`. |
 | `GARENA_CLIENT_ID` / `GARENA_CLIENT_SECRET` | — | Required for the Garena provider. |
@@ -144,7 +145,7 @@ src/
   lib/                     # cross-cutting helpers, no feature dependencies
     http-error.ts          # ApiError class + isRecord helper
     http-client.ts         # httpJson(): timeout + JSON parsing + standard errors
-    server-auth.ts         # requireBearerKey() beforeHandle for SERVER_API_KEY
+    server-auth.ts         # requireLlmBearerAuth() beforeHandle for SERVER_API_KEY/JWT access tokens
   llm/                     # OpenAI-compatible chat API + provider abstraction
     index.ts               # barrel: createLlmProvider, llmRoutes, types
     routes.ts              # Elysia plugin: POST /v1/chat/completions, GET /v1/models
@@ -155,7 +156,7 @@ src/
       garena.ts            # OAuth + file-cached token + auto refresh + chat
       openai.ts            # pass-through to OpenAI-compatible upstream
   auth/                    # end-user auth module (currently stubbed)
-    routes.ts              # Elysia plugin: GET /auth/ping (+ TODO endpoints)
+    routes.ts              # Elysia plugin: GET /auth/session, POST /auth/login
     index.ts
     README.md
   db/                      # persistence module (currently stubbed)

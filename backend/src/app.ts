@@ -1,11 +1,11 @@
-import { Elysia } from 'elysia';
-import { openapi } from '@elysia/openapi'
+import { Elysia, t } from 'elysia';
 
 import type { AppConfig } from './config';
 import type { DbClient } from './db';
+import { errorMiddleware } from './middlewares/error';
+import { openapiMiddleware } from './middlewares/openapi';
 import { authRoutes } from './modules/auth';
 import { llmRoutes, type LlmProvider } from './modules/llm';
-import { ApiError } from './shared/http-error';
 
 export interface AppDeps {
   config: AppConfig;
@@ -34,29 +34,17 @@ export function buildApp(deps: AppDeps) {
   });
 
   return new Elysia(opts)
-    .use(openapi({ path: '/doc' }))
-    .get('/', home)
-    .get('/health', () => ({ ok: true }))
-    .use(authRoutes({ db }))
-    .use(llmRoutes({ provider, serverApiKey: config.serverApiKey }))
-    .onError(({ code, error, set }) => {
-      if (code === 'NOT_FOUND') {
-        set.status = 404
-        return { message: "Not Found" }
-      }
-      if (error instanceof ApiError) {
-        set.status = error.status;
-        return error.toResponse();
-      }
-
-      set.status = 500;
-      return {
-        error: {
-          type: 'internal_server_error',
-          message: error instanceof Error ? error.message : 'Unexpected server error.',
-          status: 500,
-          retriable: false,
-        },
-      };
-    });
+    .use(openapiMiddleware())
+    .use(errorMiddleware())
+    .get('/', home, {
+      response: { 200: t.Object({ ok: t.Boolean() }) },
+      detail: { tags: ['System'], summary: 'Home' },
+    })
+    .get('/healthcheck', () => ({ ok: true }), {
+      response: { 200: t.Object({ ok: t.Boolean() }) },
+      detail: { tags: ['System'], summary: 'Healthcheck' },
+    })
+    .use(authRoutes({ db, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }))
+    .use(llmRoutes({ provider, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }),
+    );
 }
