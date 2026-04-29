@@ -26,6 +26,7 @@ export interface AppConfig {
   prefix: string;
   serverApiKey?: string;
   jwtSecret: string;
+  systemPromptFile: string;
   provider: ProviderName;
   garena: GarenaConfig;
   openai: OpenAIConfig;
@@ -36,6 +37,7 @@ const SUPPORTED_PROVIDERS: ProviderName[] = ['garena', 'openai'];
 const DEFAULTS = {
   port: 3000,
   jwtSecret: '',
+  systemPromptFile: './prompts/system.md',
   garena: {
     baseUrl: '/api/v1',
     timeoutMs: 620_000,
@@ -66,6 +68,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const prefix = env.PREFIX?.trim() || '';
   const serverApiKey = env.SERVER_API_KEY?.trim() || undefined;
   const jwtSecret = env.JWT_SECRET?.trim() ?? DEFAULTS.jwtSecret;
+  const systemPromptFile = resolve(
+    env.SYSTEM_PROMPT_FILE?.trim() || DEFAULTS.systemPromptFile,
+  );
 
   const garenaTimeout = parsePositiveInt(env.GARENA_HTTP_TIMEOUT_MS, DEFAULTS.garena.timeoutMs);
   const garena: GarenaConfig = {
@@ -87,7 +92,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     project: env.OPENAI_PROJECT?.trim() || undefined,
   };
 
-  return { port, prefix, serverApiKey, jwtSecret, provider, garena, openai };
+  return {
+    port,
+    prefix,
+    serverApiKey,
+    jwtSecret,
+    systemPromptFile,
+    provider,
+    garena,
+    openai,
+  };
 }
 
 function parsePositiveInt(raw: string | undefined, fallback: number): number {

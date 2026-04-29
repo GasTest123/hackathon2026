@@ -31,6 +31,7 @@ for the full list. Key entries:
 | `PREFIX` | `` | HTTP url prefix. |
 | `SERVER_API_KEY` | unset | Optional. When set, LLM clients may send `Authorization: Bearer <SERVER_API_KEY>` or a JWT access token. |
 | `JWT_SECRET` | unset | Secret used to sign and verify user access-token JWTs. May be empty for local development; use a strong secret in production. |
+| `SYSTEM_PROMPT_FILE` | `./prompts/system.md` | System prompt template file; relative paths are resolved from the backend cwd. |
 | `GARENA_API_ORIGIN` | — | Required when `GARENA_BASE_URL` is a relative path. |
 | `GARENA_BASE_URL` | `/api/v1` | Use a full URL (`https://…/api/v1`) to skip `GARENA_API_ORIGIN`. |
 | `GARENA_CLIENT_ID` / `GARENA_CLIENT_SECRET` | — | Required for the Garena provider. |
@@ -59,6 +60,19 @@ curl -sS http://localhost:3000/v1/chat/completions \
     ],
     "max_tokens": 256
   }'
+```
+
+Before forwarding each chat request upstream, the service re-reads
+`SYSTEM_PROMPT_FILE` and uses it as a system prompt template. Put `{{system}}`
+in the file to inject the request's own `system` message content at that exact
+position. Missing or blank prompt files leave the request unchanged.
+
+Example `prompts/system.md`:
+
+```md
+你是产品里的固定 AI 分身。
+
+{{system}}
 ```
 
 The response uses the OpenAI shape:

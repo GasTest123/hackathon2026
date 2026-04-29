@@ -45,6 +45,10 @@ export function buildApp(deps: AppDeps) {
       detail: { tags: ['System'], summary: 'Healthcheck' },
     })
     .use(authRoutes({ db, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }))
-    .use(llmRoutes({ provider, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }),
-    );
+    .use(llmRoutes({
+      provider,
+      systemPromptFile: config.systemPromptFile,
+      serverApiKey: config.serverApiKey,
+      jwtSecret: config.jwtSecret,
+    }));
 }

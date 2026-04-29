@@ -12,6 +12,7 @@ import type { LlmProvider } from './types';
 
 export interface LlmRoutesOptions {
   provider: LlmProvider;
+  systemPromptFile: string;
   /** When set, callers must send SERVER_API_KEY or a JWT access token. */
   serverApiKey?: string;
   jwtSecret: string;
@@ -22,9 +23,14 @@ export interface LlmRoutesOptions {
  *   POST /v1/chat/completions
  *   GET  /v1/models
  */
-export function llmRoutes({ provider, serverApiKey, jwtSecret }: LlmRoutesOptions) {
+export function llmRoutes({
+  provider,
+  systemPromptFile,
+  serverApiKey,
+  jwtSecret,
+}: LlmRoutesOptions) {
   const guard = requireLlmBearerAuth(serverApiKey, jwtSecret);
-  const service = createLlmService(provider);
+  const service = createLlmService(provider, { systemPromptFile });
 
   return new Elysia({ name: 'llm' })
     .group('/v1', (group) =>
