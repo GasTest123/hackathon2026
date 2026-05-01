@@ -31,6 +31,7 @@ for the full list. Key entries:
 | `PREFIX` | `` | HTTP url prefix. |
 | `SERVER_API_KEY` | unset | Optional. When set, LLM clients may send `Authorization: Bearer <SERVER_API_KEY>` or a JWT access token. |
 | `JWT_SECRET` | unset | Secret used to sign and verify user access-token JWTs. May be empty for local development; use a strong secret in production. |
+| `DATA_DIR` | `./data` | Directory used by `/profile` storage. Set to `/data` when a persistent volume is mounted there in production. |
 | `SYSTEM_PROMPT_FILE` | `./prompts/system.md` | System prompt template file; relative paths are resolved from the backend cwd. |
 | `GARENA_API_ORIGIN` | — | Required when `GARENA_BASE_URL` is a relative path. |
 | `GARENA_BASE_URL` | `/api/v1` | Use a full URL (`https://…/api/v1`) to skip `GARENA_API_ORIGIN`. |
@@ -44,6 +45,27 @@ for the full list. Key entries:
 | `OPENAI_HTTP_TIMEOUT_MS` | `60000` | |
 
 ## API
+
+### `POST /profile`
+
+Stores the current user's profile JSON. The caller must send
+`Authorization: Bearer <accessToken>`, or the configured `SERVER_API_KEY`.
+The server verifies the credential, resolves the email, and writes the request
+body to `{DATA_DIR}/{email}/profile.json`. When `SERVER_API_KEY` is used, the
+fixed API key session identity is used.
+
+```bash
+curl -sS http://localhost:3000/profile \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <accessToken>' \
+  -d '{"profile":{"creation_date":"2024-04-30"}}'
+```
+
+### `GET /profile`
+
+Reads `{DATA_DIR}/{email}/profile.json` for the current access token. If the
+file does not exist, the API returns `404 profile_not_found`. When
+`SERVER_API_KEY` is used, the fixed API key session identity is used.
 
 ### `POST /v1/chat/completions`
 
@@ -173,6 +195,10 @@ src/
     routes.ts              # Elysia plugin: GET /auth/session, POST /auth/login
     index.ts
     README.md
+  profile/                 # user profile JSON file storage
+    routes.ts              # Elysia plugin: GET /profile, POST /profile
+    service.ts             # file persistence under DATA_DIR/{email}/profile.json
+    schema.ts
   db/                      # persistence module (currently stubbed)
     client.ts              # DbClient interface + createDbClient() stub
     index.ts

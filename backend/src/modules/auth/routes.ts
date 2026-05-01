@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia';
 
 import type { DbClient } from '../../db';
+import { readBearerToken } from '../../shared/bearer-guard';
 import { accessTokenSecurity, ErrorResponseSchema } from '../../shared/schema';
 import {
   AuthSessionResponseSchema,
@@ -58,10 +59,4 @@ export function authRoutes({ db, serverApiKey, jwtSecret }: AuthRoutesOptions) {
         },
       ),
   );
-}
-
-function readBearerToken(request: Request) {
-  const header = request.headers.get('authorization') ?? '';
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || undefined;
 }

@@ -5,6 +5,7 @@ import type { DbClient } from './db';
 import { errorMiddleware } from './middlewares/error';
 import { openapiMiddleware } from './middlewares/openapi';
 import { authRoutes } from './modules/auth';
+import { profileRoutes } from './modules/profile';
 import { llmRoutes, type LlmProvider } from './modules/llm';
 
 export interface AppDeps {
@@ -45,6 +46,11 @@ export function buildApp(deps: AppDeps) {
       detail: { tags: ['System'], summary: 'Healthcheck' },
     })
     .use(authRoutes({ db, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }))
+    .use(profileRoutes({
+      dataDir: config.dataDir,
+      serverApiKey: config.serverApiKey,
+      jwtSecret: config.jwtSecret,
+    }))
     .use(llmRoutes({
       provider,
       systemPromptFile: config.systemPromptFile,

@@ -26,6 +26,7 @@ export interface AppConfig {
   prefix: string;
   serverApiKey?: string;
   jwtSecret: string;
+  dataDir: string;
   systemPromptFile: string;
   provider: ProviderName;
   garena: GarenaConfig;
@@ -37,6 +38,7 @@ const SUPPORTED_PROVIDERS: ProviderName[] = ['garena', 'openai'];
 const DEFAULTS = {
   port: 3000,
   jwtSecret: '',
+  dataDir: './data',
   systemPromptFile: './prompts/system.md',
   garena: {
     baseUrl: '/api/v1',
@@ -68,6 +70,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const prefix = env.PREFIX?.trim() || '';
   const serverApiKey = env.SERVER_API_KEY?.trim() || undefined;
   const jwtSecret = env.JWT_SECRET?.trim() ?? DEFAULTS.jwtSecret;
+  const dataDir = resolve(env.DATA_DIR?.trim() || DEFAULTS.dataDir);
   const systemPromptFile = resolve(
     env.SYSTEM_PROMPT_FILE?.trim() || DEFAULTS.systemPromptFile,
   );
@@ -97,6 +100,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     prefix,
     serverApiKey,
     jwtSecret,
+    dataDir,
     systemPromptFile,
     provider,
     garena,

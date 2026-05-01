@@ -18,6 +18,11 @@ export interface AuthService {
   session(accessToken: string | undefined): Promise<AuthSessionResponse>;
 }
 
+export interface AuthSessionResolverDeps {
+  serverApiKey?: string;
+  jwtSecret: string;
+}
+
 const API_KEY_SESSION = {
   email: 'hackathon2026@garena.com',
   deviceId: '00000000-0000-0000-0000-000000000000',
@@ -36,46 +41,60 @@ export function createAuthService(deps: AuthServiceDeps): AuthService {
       };
     },
     async session(accessToken: string | undefined): Promise<AuthSessionResponse> {
-      if (!accessToken) {
-        throw new ApiError({
-          status: 401,
-          type: 'unauthorized',
-          message: 'Missing or invalid access token.',
-        });
-      }
-
-      if (deps.serverApiKey && accessToken === deps.serverApiKey) {
-        return {
-          ...API_KEY_SESSION,
-          accessToken: createAccessToken(API_KEY_SESSION, deps.jwtSecret),
-        };
-      }
-
-      const payload = parseVerifiedJwt(accessToken, deps.jwtSecret)?.payload;
-      if (!payload) {
-        throw new ApiError({
-          status: 401,
-          type: 'unauthorized',
-          message: 'Missing or invalid access token.',
-        });
-      }
-
-      const email = typeof payload?.email === 'string' ? payload.email : '';
-      const deviceId = typeof payload?.deviceId === 'string' ? payload.deviceId : '';
-
-      if (!email || !deviceId) {
-        throw new ApiError({
-          status: 401,
-          type: 'unauthorized',
-          message: 'Access token does not include session identity.',
-        });
-      }
-
-      return {
-        email,
-        deviceId,
-        accessToken,
-      };
+      return resolveAuthSession(accessToken, deps);
     },
   };
+}
+
+export function resolveAuthSession(
+  accessToken: string | undefined,
+  deps: AuthSessionResolverDeps,
+): AuthSessionResponse {
+  if (accessToken && deps.serverApiKey && accessToken === deps.serverApiKey) {
+    return {
+      ...API_KEY_SESSION,
+      accessToken: createAccessToken(API_KEY_SESSION, deps.jwtSecret),
+    };
+  }
+
+  return resolveAccessTokenSession(accessToken, deps.jwtSecret);
+}
+
+export function resolveAccessTokenSession(
+  accessToken: string | undefined,
+  jwtSecret: string,
+): AuthSessionResponse {
+  if (!accessToken) {
+    throw unauthorized();
+  }
+
+  const payload = parseVerifiedJwt(accessToken, jwtSecret)?.payload;
+  if (!payload) {
+    throw unauthorized();
+  }
+
+  const email = typeof payload?.email === 'string' ? payload.email : '';
+  const deviceId = typeof payload?.deviceId === 'string' ? payload.deviceId : '';
+
+  if (!email || !deviceId) {
+    throw new ApiError({
+      status: 401,
+      type: 'unauthorized',
+      message: 'Access token does not include session identity.',
+    });
+  }
+
+  return {
+    email,
+    deviceId,
+    accessToken,
+  };
+}
+
+function unauthorized() {
+  return new ApiError({
+    status: 401,
+    type: 'unauthorized',
+    message: 'Missing or invalid access token.',
+  });
 }
