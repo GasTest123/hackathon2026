@@ -36,8 +36,13 @@ export const SaveProfileResponseSchema = t.Object({
   ok: t.Boolean(),
 });
 
+export const ResetProfileResponseSchema = t.Object({
+  ok: t.Boolean(),
+});
+
 export type ProfileData = Record<string, unknown>;
 export type SaveProfileResponse = Static<typeof SaveProfileResponseSchema>;
+export type ResetProfileResponse = Static<typeof ResetProfileResponseSchema>;
 
 export function parseProfileData(body: unknown): ProfileData {
   if (!isRecord(body)) {

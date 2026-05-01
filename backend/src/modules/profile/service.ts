@@ -1,8 +1,8 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 
 import { ApiError, isRecord } from '../../shared/http-error';
-import type { ProfileData, SaveProfileResponse } from './schema';
+import type { ProfileData, ResetProfileResponse, SaveProfileResponse } from './schema';
 
 export interface ProfileServiceDeps {
   dataDir: string;
@@ -11,6 +11,7 @@ export interface ProfileServiceDeps {
 export interface ProfileService {
   save(email: string, data: ProfileData): Promise<SaveProfileResponse>;
   get(email: string): Promise<ProfileData>;
+  reset(email: string): Promise<ResetProfileResponse>;
 }
 
 export function createProfileService({ dataDir }: ProfileServiceDeps): ProfileService {
@@ -60,10 +61,20 @@ export function createProfileService({ dataDir }: ProfileServiceDeps): ProfileSe
         });
       }
     },
+
+    async reset(email: string) {
+      const dir = profileDirPath(rootDir, email);
+      await rm(dir, { recursive: true, force: true });
+      return { ok: true };
+    },
   };
 }
 
 function profileFilePath(rootDir: string, email: string) {
+  return resolve(profileDirPath(rootDir, email), 'profile.json');
+}
+
+function profileDirPath(rootDir: string, email: string) {
   if (!email || /[\\/]/.test(email) || email.includes('\0')) {
     throw new ApiError({
       status: 400,
@@ -72,9 +83,9 @@ function profileFilePath(rootDir: string, email: string) {
     });
   }
 
-  const file = resolve(rootDir, email, 'profile.json');
+  const dir = resolve(rootDir, email);
   const prefix = rootDir.endsWith(sep) ? rootDir : `${rootDir}${sep}`;
-  if (!file.startsWith(prefix)) {
+  if (!dir.startsWith(prefix)) {
     throw new ApiError({
       status: 400,
       type: 'invalid_profile_owner',
@@ -82,7 +93,7 @@ function profileFilePath(rootDir: string, email: string) {
     });
   }
 
-  return file;
+  return dir;
 }
 
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {

@@ -67,6 +67,13 @@ Reads `{DATA_DIR}/{email}/profile.json` for the current access token. If the
 file does not exist, the API returns `404 profile_not_found`. When
 `SERVER_API_KEY` is used, the fixed API key session identity is used.
 
+### `POST /profile/reset`
+
+Deletes `{DATA_DIR}/{email}/` and all files under it for the current access
+token. The caller must send `Authorization: Bearer <accessToken>`, or the
+configured `SERVER_API_KEY`. The API returns `{ "ok": true }` even when the
+directory was already absent.
+
 ### `POST /v1/chat/completions`
 
 OpenAI-compatible request and response (non-streaming only). Example with the
@@ -196,8 +203,8 @@ src/
     index.ts
     README.md
   profile/                 # user profile JSON file storage
-    routes.ts              # Elysia plugin: GET /profile, POST /profile
-    service.ts             # file persistence under DATA_DIR/{email}/profile.json
+    routes.ts              # Elysia plugin: GET /profile, POST /profile, POST /profile/reset
+    service.ts             # file persistence under DATA_DIR/{email}/
     schema.ts
   db/                      # persistence module (currently stubbed)
     client.ts              # DbClient interface + createDbClient() stub

@@ -3,7 +3,12 @@ import { Elysia } from 'elysia';
 import { readBearerToken } from '../../shared/bearer-guard';
 import { accessTokenSecurity, ErrorResponseSchema } from '../../shared/schema';
 import { resolveAuthSession } from '../auth';
-import { parseProfileData, ProfileDataSchema, SaveProfileResponseSchema } from './schema';
+import {
+  parseProfileData,
+  ProfileDataSchema,
+  ResetProfileResponseSchema,
+  SaveProfileResponseSchema,
+} from './schema';
 import { createProfileService } from './service';
 
 export interface ProfileRoutesOptions {
@@ -59,6 +64,28 @@ export function profileRoutes({ dataDir, serverApiKey, jwtSecret }: ProfileRoute
         detail: {
           tags: ['Profile'],
           summary: 'Get current user profile',
+          security: accessTokenSecurity,
+        },
+      },
+    )
+    .post(
+      '/profile/reset',
+      async ({ request, set }) => {
+        const session = resolveAuthSession(readBearerToken(request), { serverApiKey, jwtSecret });
+        const result = await service.reset(session.email);
+        set.status = 200;
+        return result;
+      },
+      {
+        response: {
+          200: ResetProfileResponseSchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+          500: ErrorResponseSchema,
+        },
+        detail: {
+          tags: ['Profile'],
+          summary: 'Reset current user profile data',
           security: accessTokenSecurity,
         },
       },
