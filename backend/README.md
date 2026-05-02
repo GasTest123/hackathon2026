@@ -107,8 +107,32 @@ curl -sS http://localhost:3000/v1/chat/completions \
       {"role": "system", "content": "你是一个有趣的 AI 分身"},
       {"role": "user", "content": "你好，介绍一下你自己"}
     ],
-    "max_tokens": 256
+    "max_tokens": 512,
+    "response_format": {"type": "json_object"}
   }'
+```
+
+`response_format` is passed through in the OpenAI-compatible shape. Supported
+types are `text`, `json_object`, and `json_schema`.
+
+```json
+{
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chat_reply",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "string" }
+        },
+        "required": ["content"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  }
+}
 ```
 
 Before forwarding each chat request upstream, the service re-reads

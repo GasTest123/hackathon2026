@@ -11,7 +11,21 @@ export interface ChatCompletionRequest {
   max_tokens?: number;
   temperature?: number;
   top_p?: number;
+  response_format?: ResponseFormat;
 }
+
+export type ResponseFormat =
+  | { type: 'text' }
+  | { type: 'json_object' }
+  | {
+      type: 'json_schema';
+      json_schema: {
+        name: string;
+        description?: string;
+        schema?: Record<string, unknown>;
+        strict?: boolean;
+      };
+    };
 
 export interface ChatCompletionChoice {
   index: number;
