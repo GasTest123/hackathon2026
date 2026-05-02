@@ -31,7 +31,7 @@ for the full list. Key entries:
 | `PREFIX` | `` | HTTP url prefix. |
 | `SERVER_API_KEY` | unset | Optional. When set, LLM clients may send `Authorization: Bearer <SERVER_API_KEY>` or a JWT access token. |
 | `JWT_SECRET` | unset | Secret used to sign and verify user access-token JWTs. May be empty for local development; use a strong secret in production. |
-| `DATA_DIR` | `./data` | Directory used by `/profile` storage. Set to `/data` when a persistent volume is mounted there in production. |
+| `DATA_DIR` | `./data` | Directory used by `/profile` and `/resource` storage. Set to `/data` when a persistent volume is mounted there in production. |
 | `SYSTEM_PROMPT_FILE` | `./prompts/system.md` | System prompt template file; relative paths are resolved from the backend cwd. |
 | `GARENA_API_ORIGIN` | — | Required when `GARENA_BASE_URL` is a relative path. |
 | `GARENA_BASE_URL` | `/api/v1` | Use a full URL (`https://…/api/v1`) to skip `GARENA_API_ORIGIN`. |
@@ -73,6 +73,26 @@ Deletes `{DATA_DIR}/{email}/` and all files under it for the current access
 token. The caller must send `Authorization: Bearer <accessToken>`, or the
 configured `SERVER_API_KEY`. The API returns `{ "ok": true }` even when the
 directory was already absent.
+
+### `POST /resource/{name}`
+
+Stores a user-defined JSON object for the current access token. With
+`PREFIX=/api`, the effective path is `/api/resource/{name}`. The caller must
+send `Authorization: Bearer <accessToken>`, or the configured `SERVER_API_KEY`.
+The server writes the request body to `{DATA_DIR}/{email}/resource_{name}.json`.
+
+```bash
+curl -sS http://localhost:3000/api/resource/chat \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <accessToken>' \
+  -d '{"chat_history":[{"message_id":1,"role":"user","content":"闹钟响了，起床吧","timestamp":111111111}]}'
+```
+
+### `GET /resource/{name}`
+
+Reads `{DATA_DIR}/{email}/resource_{name}.json` for the current access token.
+With `PREFIX=/api`, the effective path is `/api/resource/{name}`. If the file
+does not exist, the API returns `{}`.
 
 ### `POST /v1/chat/completions`
 
@@ -205,6 +225,10 @@ src/
   profile/                 # user profile JSON file storage
     routes.ts              # Elysia plugin: GET /profile, POST /profile, POST /profile/reset
     service.ts             # file persistence under DATA_DIR/{email}/
+    schema.ts
+  resource/                # user-defined resource JSON file storage
+    routes.ts              # Elysia plugin: GET /resource/{name}, POST /resource/{name}
+    service.ts             # file persistence under DATA_DIR/{email}/resource_{name}.json
     schema.ts
   db/                      # persistence module (currently stubbed)
     client.ts              # DbClient interface + createDbClient() stub

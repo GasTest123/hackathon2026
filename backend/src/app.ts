@@ -6,6 +6,7 @@ import { errorMiddleware } from './middlewares/error';
 import { openapiMiddleware } from './middlewares/openapi';
 import { authRoutes } from './modules/auth';
 import { profileRoutes } from './modules/profile';
+import { resourceRoutes } from './modules/resource';
 import { llmRoutes, type LlmProvider } from './modules/llm';
 
 export interface AppDeps {
@@ -47,6 +48,11 @@ export function buildApp(deps: AppDeps) {
     })
     .use(authRoutes({ db, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }))
     .use(profileRoutes({
+      dataDir: config.dataDir,
+      serverApiKey: config.serverApiKey,
+      jwtSecret: config.jwtSecret,
+    }))
+    .use(resourceRoutes({
       dataDir: config.dataDir,
       serverApiKey: config.serverApiKey,
       jwtSecret: config.jwtSecret,
