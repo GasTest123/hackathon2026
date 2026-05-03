@@ -49,6 +49,9 @@ export function buildApp(deps: AppDeps) {
     .use(authRoutes({ db, serverApiKey: config.serverApiKey, jwtSecret: config.jwtSecret }))
     .use(profileRoutes({
       dataDir: config.dataDir,
+      provider,
+      profileSystemPromptFile: config.profileSystemPromptFile,
+      profileUserPromptFile: config.profileUserPromptFile,
       serverApiKey: config.serverApiKey,
       jwtSecret: config.jwtSecret,
     }))

@@ -3,7 +3,9 @@ import { Elysia } from 'elysia';
 import { readBearerToken } from '../../shared/bearer-guard';
 import { accessTokenSecurity, ErrorResponseSchema } from '../../shared/schema';
 import { resolveAuthSession } from '../auth';
+import type { LlmProvider } from '../llm/types';
 import {
+  GenerateProfileResponseSchema,
   parseProfileData,
   ProfileDataSchema,
   ResetProfileResponseSchema,
@@ -13,12 +15,27 @@ import { createProfileService } from './service';
 
 export interface ProfileRoutesOptions {
   dataDir: string;
+  provider: LlmProvider;
+  profileSystemPromptFile: string;
+  profileUserPromptFile: string;
   serverApiKey?: string;
   jwtSecret: string;
 }
 
-export function profileRoutes({ dataDir, serverApiKey, jwtSecret }: ProfileRoutesOptions) {
-  const service = createProfileService({ dataDir });
+export function profileRoutes({
+  dataDir,
+  provider,
+  profileSystemPromptFile,
+  profileUserPromptFile,
+  serverApiKey,
+  jwtSecret,
+}: ProfileRoutesOptions) {
+  const service = createProfileService({
+    dataDir,
+    provider,
+    profileSystemPromptFile,
+    profileUserPromptFile,
+  });
 
   return new Elysia({ name: 'profile' })
     .post(
@@ -86,6 +103,30 @@ export function profileRoutes({ dataDir, serverApiKey, jwtSecret }: ProfileRoute
         detail: {
           tags: ['Profile'],
           summary: 'Reset current user profile data',
+          security: accessTokenSecurity,
+        },
+      },
+    )
+    .post(
+      '/profile/generate',
+      async ({ request, set }) => {
+        const session = resolveAuthSession(readBearerToken(request), { serverApiKey, jwtSecret });
+        const result = await service.generate(session.email);
+        set.status = 200;
+        return result;
+      },
+      {
+        response: {
+          200: GenerateProfileResponseSchema,
+          400: ErrorResponseSchema,
+          401: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          500: ErrorResponseSchema,
+          502: ErrorResponseSchema,
+        },
+        detail: {
+          tags: ['Profile'],
+          summary: 'Generate final profile',
           security: accessTokenSecurity,
         },
       },

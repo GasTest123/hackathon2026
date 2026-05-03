@@ -28,6 +28,8 @@ export interface AppConfig {
   jwtSecret: string;
   dataDir: string;
   systemPromptFile: string;
+  profileSystemPromptFile: string;
+  profileUserPromptFile: string;
   provider: ProviderName;
   garena: GarenaConfig;
   openai: OpenAIConfig;
@@ -40,6 +42,8 @@ const DEFAULTS = {
   jwtSecret: '',
   dataDir: './data',
   systemPromptFile: './prompts/system.md',
+  profileSystemPromptFile: './prompts/profile_system.md',
+  profileUserPromptFile: './prompts/profile_user.md',
   garena: {
     baseUrl: '/api/v1',
     timeoutMs: 620_000,
@@ -74,6 +78,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const systemPromptFile = resolve(
     env.SYSTEM_PROMPT_FILE?.trim() || DEFAULTS.systemPromptFile,
   );
+  const profileSystemPromptFile = resolve(
+    env.PROFILE_SYSTEM_PROMPT_FILE?.trim() || DEFAULTS.profileSystemPromptFile,
+  );
+  const profileUserPromptFile = resolve(
+    env.PROFILE_USER_PROMPT_FILE?.trim() || DEFAULTS.profileUserPromptFile,
+  );
 
   const garenaTimeout = parsePositiveInt(env.GARENA_HTTP_TIMEOUT_MS, DEFAULTS.garena.timeoutMs);
   const garena: GarenaConfig = {
@@ -102,6 +112,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     jwtSecret,
     dataDir,
     systemPromptFile,
+    profileSystemPromptFile,
+    profileUserPromptFile,
     provider,
     garena,
     openai,

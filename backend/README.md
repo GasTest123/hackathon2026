@@ -33,6 +33,8 @@ for the full list. Key entries:
 | `JWT_SECRET` | unset | Secret used to sign and verify user access-token JWTs. May be empty for local development; use a strong secret in production. |
 | `DATA_DIR` | `./data` | Directory used by `/profile` and `/resource` storage. Set to `/data` when a persistent volume is mounted there in production. |
 | `SYSTEM_PROMPT_FILE` | `./prompts/system.md` | System prompt template file; relative paths are resolved from the backend cwd. |
+| `PROFILE_SYSTEM_PROMPT_FILE` | `./prompts/profile_system.md` | System prompt file used by `POST /profile/generate`. |
+| `PROFILE_USER_PROMPT_FILE` | `./prompts/profile_user.md` | User prompt template file used by `POST /profile/generate`. |
 | `GARENA_API_ORIGIN` | — | Required when `GARENA_BASE_URL` is a relative path. |
 | `GARENA_BASE_URL` | `/api/v1` | Use a full URL (`https://…/api/v1`) to skip `GARENA_API_ORIGIN`. |
 | `GARENA_CLIENT_ID` / `GARENA_CLIENT_SECRET` | — | Required for the Garena provider. |
@@ -73,6 +75,50 @@ Deletes `{DATA_DIR}/{email}/` and all files under it for the current access
 token. The caller must send `Authorization: Bearer <accessToken>`, or the
 configured `SERVER_API_KEY`. The API returns `{ "ok": true }` even when the
 directory was already absent.
+
+### `POST /profile/generate`
+
+Generates the final profile string for the current access token. The API has no
+request body. It reads `PROFILE_SYSTEM_PROMPT_FILE` as the LLM system prompt,
+reads `PROFILE_USER_PROMPT_FILE` as the user prompt template, then fills the
+template from `{DATA_DIR}/{email}/profile.json` and
+`{DATA_DIR}/{email}/resource_chat.json`. The rendered user prompt is written to
+`{DATA_DIR}/{email}/profile_input.md`, and the generated profile string is
+written to `{DATA_DIR}/{email}/profile_output.md`.
+
+```bash
+curl -sS -X POST http://localhost:3000/profile/generate \
+  -H 'Authorization: Bearer <accessToken>'
+```
+
+Response:
+
+```json
+{
+  "profile": "generated profile text"
+}
+```
+
+Supported user prompt placeholders include:
+
+- `{{emotion_0_level}}`, `{{emotion_0_exp}}`, and other primitive fields from
+  `emotion_avatars` or `emotions`.
+- `{{chat_history}}`, formatted as one message per line:
+  `message_id|emotion_id|content`. For `role: "user"` messages, the
+  `emotion_id` field is rendered as `-`.
+- `{{my_message_ids}}`, formatted as `1, 2, 5`. If
+  `resource_chat.json` does not include an explicit `my_message_ids` array,
+  messages with `role: "user"` are used.
+- `{{like_message_ids}}`, formatted as `1, 2, 5`. If
+  `resource_chat.json` does not include an explicit `like_message_ids` array,
+  messages with `is_me: true`, `like: true`, or `liked: true` are used.
+- `{{unlike_message_ids}}`, formatted as `1, 2, 5`. If no explicit
+  `unlike_message_ids` array exists, messages with `not_me: true`,
+  `unlike: true`, `unliked: true`, `dislike: true`, or `disliked: true` are
+  used.
+
+Profile generation calls the LLM with `max_tokens: 8192` so the returned user
+profile can be detailed and complete.
 
 ### `POST /resource/{name}`
 
@@ -247,7 +293,7 @@ src/
     index.ts
     README.md
   profile/                 # user profile JSON file storage
-    routes.ts              # Elysia plugin: GET /profile, POST /profile, POST /profile/reset
+    routes.ts              # Elysia plugin: GET /profile, POST /profile, POST /profile/reset, POST /profile/generate
     service.ts             # file persistence under DATA_DIR/{email}/
     schema.ts
   resource/                # user-defined resource JSON file storage

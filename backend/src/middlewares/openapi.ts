@@ -26,5 +26,15 @@ export function openapiMiddleware() {
         },
       },
     },
+    scalar: {
+      authentication: {
+        preferredSecurityScheme: 'accessToken',
+        securitySchemes: {
+          accessToken: {
+            token: 'hackathon2026',
+          },
+        },
+      },
+    },
   });
 }
